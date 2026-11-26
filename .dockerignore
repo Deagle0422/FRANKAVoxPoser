@@ -1,0 +1,16 @@
+.git
+.env
+secrets
+robot_ws/build
+robot_ws/install
+robot_ws/log
+outputs
+visualizations
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.ipynb_checkpoints
+voxposer/cache
+voxposer/src/cache
+**/trace_output
+

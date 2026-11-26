@@ -1,0 +1,23 @@
+workspace_boundary:
+  # All limits are expressed in the fixed FR3 base frame.
+  frame_id: fr3_link0
+  tcp_link: fr3_hand_tcp
+
+  # Physical outer envelope. The runtime supervisor must never allow the
+  # measured TCP to leave this box. It matches the table footprint and leaves
+  # a small vertical allowance below/above the normal planning box.
+  hard_min: [0.25, -1.10, -0.1265]
+  hard_max: [1.45, 0.90, 0.85]
+
+  # Normal keep-in region used by MoveIt and by target preflight checks.
+  # The Y faces are 50 mm inside the table edges. X-min leaves the fixed Work
+  # Home at X ~= 0.300 m about 20 mm of clearance while retaining 30 mm of
+  # braking space before the hard X-min face. The lower Z face is 10 mm above
+  # the tabletop and still permits the existing -0.1065 m pick height.
+  planning_min: [0.28, -1.05, -0.1165]
+  planning_max: [1.40, 0.85, 0.80]
+
+  monitor_rate_hz: 100.0
+  marker_rate_hz: 10.0
+  warning_distance: 0.01
+  cancel_repeat_seconds: 0.20

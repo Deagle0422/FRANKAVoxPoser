@@ -1,0 +1,10 @@
+# Pinned to the environment used for the validated FR3 RGB-D experiment.
+numpy==2.0.2
+scipy==1.13.1
+PyYAML==6.0.3
+openai==2.48.0
+plotly==7.1.0
+transforms3d==0.4.2
+Pygments==2.21.0
+open3d==0.19.0
+

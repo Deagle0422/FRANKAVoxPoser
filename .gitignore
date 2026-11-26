@@ -1,0 +1,31 @@
+# Local secrets
+.env
+secrets/
+**/api.txt
+
+# ROS / colcon outputs
+robot_ws/build/
+robot_ws/install/
+robot_ws/log/
+
+# Python outputs
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.ipynb_checkpoints/
+voxposer/cache/
+voxposer/src/cache/
+outputs/
+visualizations/
+
+# Runtime traces and dumps
+**/trace_output/
+**/core
+**/core.*
+*.log
+
+# Editors and OS metadata
+.idea/
+.vscode/
+.DS_Store
+

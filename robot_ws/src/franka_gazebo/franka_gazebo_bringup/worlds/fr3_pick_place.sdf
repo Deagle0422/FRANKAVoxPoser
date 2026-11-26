@@ -1,0 +1,205 @@
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="fr3_pick_place">
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <!-- Ogre 1 avoids Ogre2's EGL device path, which fails in the ROS 2
+           container when the host NVIDIA userspace driver is unavailable. -->
+      <render_engine>ogre</render_engine>
+    </plugin>
+
+    <gravity>0 0 -9.81</gravity>
+
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <direction>-0.5 0.2 -0.9</direction>
+    </light>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><plane><normal>0 0 1</normal><size>20 20</size></plane></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><plane><normal>0 0 1</normal><size>20 20</size></plane></geometry>
+          <material><ambient>0.45 0.45 0.45 1</ambient><diffuse>0.55 0.55 0.55 1</diffuse></material>
+        </visual>
+      </link>
+      <pose>0 0 -0.75 0 0 0</pose>
+    </model>
+
+    <!-- Floor-mounted pedestal below fr3_link0. The robot base frame remains at
+         world Z=0; this model only fills the visible space down to the floor. -->
+    <model name="robot_pedestal">
+      <static>true</static>
+      <link name="link">
+        <collision name="column_collision">
+          <pose>0 0 -0.405 0 0 0</pose>
+          <geometry><cylinder><radius>0.14</radius><length>0.69</length></cylinder></geometry>
+        </collision>
+        <visual name="column_visual">
+          <pose>0 0 -0.405 0 0 0</pose>
+          <geometry><cylinder><radius>0.14</radius><length>0.69</length></cylinder></geometry>
+          <material><ambient>0.20 0.22 0.24 1</ambient><diffuse>0.32 0.35 0.38 1</diffuse></material>
+        </visual>
+        <collision name="top_plate_collision">
+          <pose>0 0 -0.03 0 0 0</pose>
+          <geometry><cylinder><radius>0.18</radius><length>0.06</length></cylinder></geometry>
+        </collision>
+        <visual name="top_plate_visual">
+          <pose>0 0 -0.03 0 0 0</pose>
+          <geometry><cylinder><radius>0.18</radius><length>0.06</length></cylinder></geometry>
+          <material><ambient>0.12 0.13 0.14 1</ambient><diffuse>0.22 0.24 0.26 1</diffuse></material>
+        </visual>
+        <collision name="floor_plate_collision">
+          <pose>0 0 -0.73 0 0 0</pose>
+          <geometry><cylinder><radius>0.20</radius><length>0.04</length></cylinder></geometry>
+        </collision>
+        <visual name="floor_plate_visual">
+          <pose>0 0 -0.73 0 0 0</pose>
+          <geometry><cylinder><radius>0.20</radius><length>0.04</length></cylinder></geometry>
+          <material><ambient>0.12 0.13 0.14 1</ambient><diffuse>0.22 0.24 0.26 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="work_table">
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+      <link name="table_top">
+        <pose>0.85 -0.1 -0.1515 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>1.2 2.0 0.05</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>1.2 2.0 0.05</size></box></geometry>
+          <material><ambient>0.40 0.25 0.12 1</ambient><diffuse>0.55 0.34 0.16 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="front_left_leg">
+        <pose>0.35 -0.95 -0.46325 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.08 0.08 0.5735</size></box></geometry></collision>
+        <visual name="visual"><geometry><box><size>0.08 0.08 0.5735</size></box></geometry><material><ambient>0.18 0.18 0.18 1</ambient></material></visual>
+      </link>
+      <link name="front_right_leg">
+        <pose>1.35 -0.95 -0.46325 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.08 0.08 0.5735</size></box></geometry></collision>
+        <visual name="visual"><geometry><box><size>0.08 0.08 0.5735</size></box></geometry><material><ambient>0.18 0.18 0.18 1</ambient></material></visual>
+      </link>
+      <link name="rear_left_leg">
+        <pose>0.35 0.75 -0.46325 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.08 0.08 0.5735</size></box></geometry></collision>
+        <visual name="visual"><geometry><box><size>0.08 0.08 0.5735</size></box></geometry><material><ambient>0.18 0.18 0.18 1</ambient></material></visual>
+      </link>
+      <link name="rear_right_leg">
+        <pose>1.35 0.75 -0.46325 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.08 0.08 0.5735</size></box></geometry></collision>
+        <visual name="visual"><geometry><box><size>0.08 0.08 0.5735</size></box></geometry><material><ambient>0.18 0.18 0.18 1</ambient></material></visual>
+      </link>
+    </model>
+
+    <model name="pick_object">
+      <pose>0.4 -0.4 -0.1065 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>0.1</mass>
+          <inertia>
+            <ixx>0.00002667</ixx><iyy>0.00002667</iyy><izz>0.00002667</izz>
+            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry><box><size>0.04 0.04 0.04</size></box></geometry>
+          <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.04 0.04 0.04</size></box></geometry>
+          <material><ambient>0.8 0.08 0.05 1</ambient><diffuse>0.9 0.1 0.06 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="place_target">
+      <static>true</static>
+      <pose>0.6 0.2 -0.1259 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><box><size>0.12 0.12 0.001</size></box></geometry>
+          <material><ambient>0.05 0.65 0.15 1</ambient><diffuse>0.08 0.8 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Fixed RGB-D camera used by VoxPoser. Gazebo cameras look along their
+         local +X axis, so +90 degrees of pitch points this sensor down at the
+         centre of the table. The ROS launch publishes the corresponding
+         optical-frame transform to fr3_link0. -->
+    <model name="voxposer_rgbd_camera">
+      <static>true</static>
+      <pose>0.85 -0.10 1.20 0 1.57079632679 0</pose>
+      <link name="link">
+        <visual name="body">
+          <pose>-0.035 0 0 0 0 0</pose>
+          <geometry><box><size>0.07 0.10 0.05</size></box></geometry>
+          <material><ambient>0.08 0.08 0.09 1</ambient><diffuse>0.12 0.12 0.14 1</diffuse></material>
+        </visual>
+        <sensor name="voxposer_rgbd" type="rgbd_camera">
+          <topic>/voxposer_rgbd</topic>
+          <update_rate>15</update_rate>
+          <camera>
+            <horizontal_fov>1.0471975512</horizontal_fov>
+            <image>
+              <width>640</width>
+              <height>480</height>
+              <format>R8G8B8</format>
+            </image>
+            <clip>
+              <near>0.10</near>
+              <far>2.50</far>
+            </clip>
+          </camera>
+          <always_on>true</always_on>
+          <visualize>true</visualize>
+        </sensor>
+      </link>
+    </model>
+
+    <!-- Gazebo-only workspace boundary outline. These are visual edges, not
+         collision geometry, so the software protection remains responsible
+         for rejecting or stopping motion. -->
+    <model name="workspace_boundary_visual">
+      <static>true</static>
+      <link name="link">
+        <visual name="x_ymin_zmin"><pose>0.84 -1.05 -0.1165 0 0 0</pose><geometry><box><size>1.12 0.012 0.012</size></box></geometry><material><ambient>0.05 0.8 0.9 1</ambient><emissive>0.02 0.35 0.4 1</emissive></material></visual>
+        <visual name="x_ymax_zmin"><pose>0.84 0.85 -0.1165 0 0 0</pose><geometry><box><size>1.12 0.012 0.012</size></box></geometry><material><ambient>0.05 0.8 0.9 1</ambient><emissive>0.02 0.35 0.4 1</emissive></material></visual>
+        <visual name="x_ymin_zmax"><pose>0.84 -1.05 0.8 0 0 0</pose><geometry><box><size>1.12 0.012 0.012</size></box></geometry><material><ambient>0.05 0.8 0.9 1</ambient><emissive>0.02 0.35 0.4 1</emissive></material></visual>
+        <visual name="x_ymax_zmax"><pose>0.84 0.85 0.8 0 0 0</pose><geometry><box><size>1.12 0.012 0.012</size></box></geometry><material><ambient>0.05 0.8 0.9 1</ambient><emissive>0.02 0.35 0.4 1</emissive></material></visual>
+        <visual name="y_xmin_zmin"><pose>0.28 -0.10 -0.1165 0 0 0</pose><geometry><box><size>0.012 1.90 0.012</size></box></geometry><material><ambient>0.05 0.8 0.9 1</ambient><emissive>0.02 0.35 0.4 1</emissive></material></visual>
+        <visual name="y_xmax_zmin"><pose>1.40 -0.10 -0.1165 0 0 0</pose><geometry><box><size>0.012 1.90 0.012</size></box></geometry><material><ambient>0.05 0.8 0.9 1</ambient><emissive>0.02 0.35 0.4 1</emissive></material></visual>
+        <visual name="y_xmin_zmax"><pose>0.28 -0.10 0.8 0 0 0</pose><geometry><box><size>0.012 1.90 0.012</size></box></geometry><material><ambient>0.05 0.8 0.9 1</ambient><emissive>0.02 0.35 0.4 1</emissive></material></visual>
+        <visual name="y_xmax_zmax"><pose>1.40 -0.10 0.8 0 0 0</pose><geometry><box><size>0.012 1.90 0.012</size></box></geometry><material><ambient>0.05 0.8 0.9 1</ambient><emissive>0.02 0.35 0.4 1</emissive></material></visual>
+        <visual name="z_xmin_ymin"><pose>0.28 -1.05 0.34175 0 0 0</pose><geometry><box><size>0.012 0.012 0.9165</size></box></geometry><material><ambient>0.05 0.8 0.9 1</ambient><emissive>0.02 0.35 0.4 1</emissive></material></visual>
+        <visual name="z_xmax_ymin"><pose>1.40 -1.05 0.34175 0 0 0</pose><geometry><box><size>0.012 0.012 0.9165</size></box></geometry><material><ambient>0.05 0.8 0.9 1</ambient><emissive>0.02 0.35 0.4 1</emissive></material></visual>
+        <visual name="z_xmin_ymax"><pose>0.28 0.85 0.34175 0 0 0</pose><geometry><box><size>0.012 0.012 0.9165</size></box></geometry><material><ambient>0.05 0.8 0.9 1</ambient><emissive>0.02 0.35 0.4 1</emissive></material></visual>
+        <visual name="z_xmax_ymax"><pose>1.40 0.85 0.34175 0 0 0</pose><geometry><box><size>0.012 0.012 0.9165</size></box></geometry><material><ambient>0.05 0.8 0.9 1</ambient><emissive>0.02 0.35 0.4 1</emissive></material></visual>
+      </link>
+    </model>
+
+    <model name="workspace_demo_stop_marker">
+      <static>true</static><pose>0 0 -3.4 0 0 0</pose>
+      <link name="link"><visual name="visual"><geometry><sphere><radius>0.055</radius></sphere></geometry><material><ambient>1.0 0.85 0.0 1</ambient><diffuse>1.0 0.9 0.05 1</diffuse><emissive>0.4 0.3 0.0 1</emissive></material></visual></link>
+    </model>
+  </world>
+</sdf>

@@ -1,0 +1,2 @@
+# Local API credentials must never be committed.
+api.txt

@@ -1,0 +1,45 @@
+rgbd:
+  topics:
+    color: /voxposer/camera/color/image_raw
+    depth: /voxposer/camera/depth/image_raw
+    camera_info: /voxposer/camera/color/camera_info
+
+  # Gazebo's sensor frame is overridden so simulation and the real camera use
+  # an explicit calibrated optical frame in the FR3 base-frame TF tree.
+  camera_frame_override: voxposer_camera_optical_frame
+  target_frame: fr3_link0
+  sync_tolerance_sec: 0.05
+  tf_timeout_sec: 0.10
+  integer_depth_scale: 0.001
+
+  stream:
+    host: 127.0.0.1
+    port: 8765
+
+  point_cloud:
+    min_depth_m: 0.10
+    max_depth_m: 2.50
+    stride: 2
+
+  workspace:
+    min: [0.28, -1.05, -0.15]
+    max: [1.40, 0.85, 0.80]
+
+  # Deterministic simulation segmentation. The consumer API accepts any
+  # callable with the same (object_name, RGB image) -> boolean mask signature,
+  # so the real camera can later replace this with an open-vocabulary model.
+  segmentation:
+    type: color_rules
+    objects:
+      pick_object:
+        aliases: [pick object, red cube, red block, cube, block]
+        dominant_channel: red
+        # Reject the brown floor (roughly RGB 142/88/42) while retaining the
+        # saturated simulated cube (roughly RGB 247/27/16).
+        min_value: 180
+        dominance_ratio: 2.0
+      place_target:
+        aliases: [place target, green target, target, green area]
+        dominant_channel: green
+        min_value: 90
+        dominance_ratio: 1.35

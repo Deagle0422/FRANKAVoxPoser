@@ -1,0 +1,159 @@
+/**:
+  controller_manager:
+    ros__parameters:
+      update_rate: 1000  # Hz
+
+      joint_position_example_controller:
+        type: franka_example_controllers/JointPositionExampleController
+
+      joint_velocity_example_controller:
+        type: franka_example_controllers/JointVelocityExampleController
+
+      joint_impedance_example_controller:
+        type: franka_example_controllers/JointImpedanceExampleController
+
+      joint_state_broadcaster:
+        type: joint_state_broadcaster/JointStateBroadcaster
+
+      # Trajectory controllers used by MoveIt and by scripts/basic_function.
+      # Keeping these names identical to the hardware setup lets the same
+      # Python clients run against either backend.
+      fr3_arm_controller:
+        type: joint_trajectory_controller/JointTrajectoryController
+
+      fr3_gripper_controller:
+        type: joint_trajectory_controller/JointTrajectoryController
+
+      mobile_fr3_duo_joint_impedance_example_controller:
+        type: franka_example_controllers/MobileFr3DuoJointImpedanceExampleController
+      
+      gravity_compensation_example_controller:
+        type: franka_example_controllers/GravityCompensationExampleController
+
+      swerve_ik_controller:
+        type: franka_mobile/SwerveIKController
+      
+      swerve_drive_controller:
+        type: franka_mobile/SwerveDriveController
+
+/**:
+  joint_velocity_example_controller:
+    ros__parameters:
+      robot_type: "fr3"
+      gazebo: true
+
+/**:
+  fr3_arm_controller:
+    ros__parameters:
+      command_interfaces:
+        # Use Gazebo's native position interface. The controller action names
+        # remain identical to the hardware backend.
+        - position
+      state_interfaces:
+        - position
+        - velocity
+      joints:
+        - fr3_joint1
+        - fr3_joint2
+        - fr3_joint3
+        - fr3_joint4
+        - fr3_joint5
+        - fr3_joint6
+        - fr3_joint7
+      gains:
+        fr3_joint1: {p: 2.0, d: 0.05, i: 0.0, i_clamp: 0.0}
+        fr3_joint2: {p: 2.0, d: 0.05, i: 0.0, i_clamp: 0.0}
+        fr3_joint3: {p: 2.0, d: 0.05, i: 0.0, i_clamp: 0.0}
+        fr3_joint4: {p: 2.0, d: 0.05, i: 0.0, i_clamp: 0.0}
+        fr3_joint5: {p: 2.0, d: 0.05, i: 0.0, i_clamp: 0.0}
+        fr3_joint6: {p: 2.0, d: 0.05, i: 0.0, i_clamp: 0.0}
+        fr3_joint7: {p: 2.0, d: 0.05, i: 0.0, i_clamp: 0.0}
+
+/**:
+  fr3_gripper_controller:
+    ros__parameters:
+      command_interfaces:
+        - position
+      state_interfaces:
+        - position
+        - velocity
+      joints:
+        # finger_joint2 mimics this joint in the FR3 URDF.
+        - fr3_finger_joint1
+      gains:
+        fr3_finger_joint1: {p: 8.0, d: 0.1, i: 0.0, i_clamp: 0.0}
+      constraints:
+        stopped_velocity_tolerance: 0.02
+        goal_time: 2.0
+        # The simulated hand can briefly lag by its full 0.04 m finger travel
+        # when it opens. Goal tolerance still verifies the final position.
+        fr3_finger_joint1: {trajectory: 0.05, goal: 0.005}
+
+/**:    
+  joint_impedance_example_controller:
+    ros__parameters:
+      robot_type: "fr3"
+      k_gains:
+        - 24.0
+        - 24.0
+        - 24.0
+        - 24.0
+        - 10.0
+        - 6.0
+        - 2.0
+      d_gains:
+        - 2.0
+        - 2.0
+        - 2.0
+        - 1.0
+        - 1.0
+        - 1.0
+        - 0.5
+
+/**:
+  swerve_drive_controller:
+    ros__parameters:
+      command_interface_prefix: swerve_ik_controller/
+      state_interface_prefix: tmrv0_2_
+      wheel_1_link_name: argo_drive_front_link
+      wheel_2_link_name: argo_drive_rear_link
+
+      linear:
+        x:
+          has_velocity_limits    : true
+          max_velocity           : 0.50  # m/s
+          min_velocity           : -0.50 # m/s
+          has_acceleration_limits: true
+          max_acceleration       : 1.0  # m/s^2
+          min_acceleration       : -1.0 # m/s^2
+          has_jerk_limits        : false
+          max_jerk               : 10.0  # m/s^3
+          min_jerk               : -10.0  # m/s^3
+        y:
+          has_velocity_limits    : true
+          max_velocity           : 0.5  # m/s
+          min_velocity           : -0.5 # m/s
+          has_acceleration_limits: true
+          max_acceleration       : 1.0  # m/s^2
+          min_acceleration       : -1.0 # m/s^2
+          has_jerk_limits        : false
+          max_jerk               : 10.0  # m/s^3
+          min_jerk               : -10.0  # m/s^3
+      angular:
+        z:
+          has_velocity_limits    : true
+          max_velocity           : 1.7  # rad/s
+          has_acceleration_limits: true
+          max_acceleration       : 1.0  # rad/s^2
+          min_acceleration       : -1.0  # rad/s^2
+          has_jerk_limits        : false
+          max_jerk               : 10.0  # rad/s^3
+          min_jerk               : -10.0  # rad/s^3
+    
+
+/**:
+  swerve_ik_controller:
+    ros__parameters:
+      prefix: "tmrv0_2_"
+      wheel_1_link_name: argo_drive_front_link
+      wheel_2_link_name: argo_drive_rear_link

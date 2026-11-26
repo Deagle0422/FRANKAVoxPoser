@@ -1,5 +1,7 @@
 # FRANKAVoxPoser
 
+实机部署请直接阅读 [FR3 实机 Docker 快速启动](REAL_FR3_DOCKER_QUICKSTART.md)。
+
 One repository for FR3 control, Gazebo validation, RGB-D perception and the
 VoxPoser planner. Host Python and ROS installations are not used: ROS 2 and
 all Python packages are built into separate Docker images.

@@ -5,6 +5,11 @@
 > 当前版本只生成规划结果。不要在实机运行 `run_voxposer_pick.py` 或
 > `run_voxposer_place.py`。
 
+控制代码分层如下：VoxPoser 只输出规划结果；
+`robot_ws/src/scripts/voxposer_fr3_adapter.py` 负责检查目标并调用原生
+`FR3Robot.move_to_xyz()`、`FrankaGripper.open()` 和 `close()`。原生控制文件
+`robot_ws/src/scripts/basic_function/` 不承载 VoxPoser 逻辑。
+
 ## 1. 安装 Docker
 
 主机建议使用 Ubuntu 22.04 和适合 Franka 的低延迟/PREEMPT_RT 内核。Docker

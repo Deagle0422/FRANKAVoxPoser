@@ -24,7 +24,11 @@ from visualization_msgs.msg import Marker, MarkerArray
 
 from basic_function.fr3_robot import get_robot
 from basic_function.fr3_gripper import get_gripper
-from test_cartesian import PICK_POSITION, run_pick_and_place
+from voxposer_fr3_adapter import (
+    PICK_POSITION,
+    VoxPoserFR3Adapter,
+    run_pick_and_place,
+)
 
 
 WORLD_NAME = "fr3_pick_place"
@@ -643,7 +647,7 @@ def parse_arguments():
 
 def main():
     arguments = parse_arguments()
-    robot = get_robot()
+    robot = VoxPoserFR3Adapter(robot=get_robot(), gripper=None)
     gripper = get_gripper()
     visualizer = DemoVisualizer(
         frame_id=robot.workspace_boundary.frame_id,

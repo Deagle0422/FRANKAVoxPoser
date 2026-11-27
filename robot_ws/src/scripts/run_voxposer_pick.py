@@ -10,8 +10,7 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 
-from basic_function.fr3_gripper import get_gripper
-from basic_function.fr3_robot import get_robot
+from voxposer_fr3_adapter import VoxPoserFR3Adapter
 
 
 def assert_isolated_simulation(expected_domain_id):
@@ -43,51 +42,6 @@ def assert_isolated_simulation(expected_domain_id):
         )
     finally:
         guard.destroy_node()
-
-
-class PickStateMachine:
-    """Stage runner using the same high-level API as test_cartesian.py."""
-
-    def __init__(
-        self,
-        robot,
-        gripper,
-        max_step,
-        max_cartesian_speed,
-        minimum_fraction,
-    ):
-        self.robot = robot
-        self.gripper = gripper
-        self.max_step = max_step
-        self.max_cartesian_speed = max_cartesian_speed
-        self.minimum_fraction = minimum_fraction
-
-    def move_to(self, name, target):
-        xyz = tuple(float(value) for value in target)
-        print(f"\n[state] {name}: robot.move_to_xyz{xyz}")
-        success = self.robot.move_to_xyz(
-            *xyz,
-            max_step=self.max_step,
-            max_cartesian_speed=self.max_cartesian_speed,
-            avoid_collisions=True,
-            minimum_fraction=self.minimum_fraction,
-            enforce_workspace_boundary=True,
-        )
-        if not success:
-            raise RuntimeError(f"{name}: robot.move_to_xyz() failed")
-        print(f"[state] {name}: PASS")
-
-    def open_gripper(self, state_name="OPEN_GRIPPER"):
-        print(f"\n[state] {state_name}: gripper.open()")
-        if not self.gripper.open():
-            raise RuntimeError(f"{state_name}: gripper.open() failed")
-        print(f"[state] {state_name}: PASS")
-
-    def close_gripper(self):
-        print("\n[state] CLOSE_GRIPPER: gripper.close()")
-        if not self.gripper.close():
-            raise RuntimeError("CLOSE_GRIPPER: gripper.close() failed")
-        print("[state] CLOSE_GRIPPER: PASS")
 
 
 def main():
@@ -130,31 +84,25 @@ def main():
     print(f"grasp_m: {np.round(grasp, 6)}")
     print(f"lift_m: {np.round(lift, 6)}")
 
-    robot = None
-    gripper = None
+    adapter = None
     try:
         assert_isolated_simulation(args.simulation_domain_id)
-        robot = get_robot()
-        gripper = get_gripper()
-        machine = PickStateMachine(
-            robot,
-            gripper,
-            args.max_step,
-            args.max_cartesian_speed,
-            args.minimum_fraction,
+        adapter = VoxPoserFR3Adapter.create(
+            with_gripper=True,
+            max_step=args.max_step,
+            max_cartesian_speed=args.max_cartesian_speed,
+            minimum_fraction=args.minimum_fraction,
         )
-        machine.open_gripper()
-        machine.move_to("PREGRASP", pregrasp)
-        machine.move_to("DESCEND", grasp)
-        machine.close_gripper()
+        adapter.open_gripper()
+        adapter.move_to("PREGRASP", pregrasp)
+        adapter.move_to("DESCEND", grasp)
+        adapter.close_gripper()
         time.sleep(0.5)
-        machine.move_to("LIFT", lift)
+        adapter.move_to("LIFT", lift)
         print("\npick state machine: PASS")
     finally:
-        if gripper is not None:
-            gripper.shutdown_gripper(shutdown_ros=False)
-        if robot is not None:
-            robot.shutdown()
+        if adapter is not None:
+            adapter.shutdown()
         elif rclpy.ok():
             rclpy.shutdown()
     return 0

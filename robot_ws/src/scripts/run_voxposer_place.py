@@ -8,9 +8,8 @@ import time
 import numpy as np
 import rclpy
 
-from basic_function.fr3_gripper import get_gripper
-from basic_function.fr3_robot import get_robot
-from run_voxposer_pick import PickStateMachine, assert_isolated_simulation
+from run_voxposer_pick import assert_isolated_simulation
+from voxposer_fr3_adapter import VoxPoserFR3Adapter
 
 
 def main():
@@ -57,30 +56,24 @@ def main():
     print(f"place_m: {np.round(place, 6)}")
     print(f"retreat_m: {np.round(retreat, 6)}")
 
-    robot = None
-    gripper = None
+    adapter = None
     try:
         assert_isolated_simulation(args.simulation_domain_id)
-        robot = get_robot()
-        gripper = get_gripper()
-        machine = PickStateMachine(
-            robot,
-            gripper,
-            args.max_step,
-            args.max_cartesian_speed,
-            args.minimum_fraction,
+        adapter = VoxPoserFR3Adapter.create(
+            with_gripper=True,
+            max_step=args.max_step,
+            max_cartesian_speed=args.max_cartesian_speed,
+            minimum_fraction=args.minimum_fraction,
         )
-        machine.move_to("TRANSFER", preplace)
-        machine.move_to("PLACE_DESCEND", place)
-        machine.open_gripper("RELEASE")
+        adapter.move_to("TRANSFER", preplace)
+        adapter.move_to("PLACE_DESCEND", place)
+        adapter.open_gripper("RELEASE")
         time.sleep(0.5)
-        machine.move_to("RETREAT", retreat)
+        adapter.move_to("RETREAT", retreat)
         print("\nplace state machine: PASS")
     finally:
-        if gripper is not None:
-            gripper.shutdown_gripper(shutdown_ros=False)
-        if robot is not None:
-            robot.shutdown()
+        if adapter is not None:
+            adapter.shutdown()
         elif rclpy.ok():
             rclpy.shutdown()
     return 0

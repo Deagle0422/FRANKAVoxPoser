@@ -17,6 +17,23 @@ outputs/          Shared runtime plans (ignored by Git)
 secrets/          Local API keys (ignored by Git)
 ```
 
+## Control boundary
+
+The original FR3 Python control API stays in
+`robot_ws/src/scripts/basic_function/`. VoxPoser does not modify or bypass it:
+
+```text
+VoxPoser plan
+    -> voxposer_fr3_adapter.py (target validation and task stages)
+    -> FR3Robot.move_to_xyz() / FrankaGripper.open() / close()
+    -> MoveIt / ros2_control / FR3
+```
+
+Simulation helpers and VoxPoser executors use `VoxPoserFR3Adapter`; the native
+`test_cartesian.py` remains the reference example for the public control API.
+Set `FR3_WORKSPACE_BOUNDARY_CONFIG` to a separately calibrated limits file
+before this adapter is ever enabled for real hardware.
+
 The containers deliberately remain separate:
 
 - `franka-control` owns ROS 2, libfranka, MoveIt and robot/camera topics. It

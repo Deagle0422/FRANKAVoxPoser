@@ -17,6 +17,7 @@ from std_srvs.srv import Trigger
 
 from basic_function.fr3_gripper import get_gripper
 from basic_function.fr3_robot import get_robot
+from voxposer_fr3_adapter import VoxPoserFR3Adapter
 
 
 WORLD_NAME = 'fr3_pick_place'
@@ -463,7 +464,7 @@ def parse_arguments():
 def main():
     arguments = parse_arguments()
     report = TestReport()
-    robot = get_robot()
+    robot = VoxPoserFR3Adapter(robot=get_robot(), gripper=None)
     gripper = get_gripper()
     probe = SimulationProbe()
 

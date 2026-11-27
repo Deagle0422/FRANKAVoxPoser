@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import os
 import time
 from threading import Event, Lock, Thread
 
@@ -15,18 +14,15 @@ from builtin_interfaces.msg import Duration
 from control_msgs.action import FollowJointTrajectory
 from geometry_msgs.msg import Pose
 from sensor_msgs.msg import JointState
-from shape_msgs.msg import SolidPrimitive
 from trajectory_msgs.msg import JointTrajectoryPoint
 
 from moveit_msgs.action import ExecuteTrajectory
-from moveit_msgs.msg import Constraints, MoveItErrorCodes, PositionConstraint
+from moveit_msgs.msg import MoveItErrorCodes
 from moveit_msgs.srv import GetCartesianPath, GetPositionFK
 
 from scipy.spatial.transform import Rotation
 
 from tf2_ros import Buffer, TransformException, TransformListener
-
-from .workspace_boundary import load_workspace_boundary
 
 
 # =============================================================
@@ -92,7 +88,6 @@ class FR3Robot(Node):
         ee_link="fr3_hand_tcp",
         planning_group="fr3_arm",
         joint_state_topic="/franka/joint_states",
-        trace_io=None,
     ):
         # Initialize ROS only once.
         if not rclpy.ok():
@@ -104,42 +99,6 @@ class FR3Robot(Node):
         self.ee_link = ee_link
         self.planning_group = planning_group
         self.joint_state_topic = joint_state_topic
-        if trace_io is None:
-            trace_io = os.environ.get(
-                "FR3_TRACE_IO",
-                "0",
-            ).strip().lower() in {
-                "1",
-                "true",
-                "yes",
-                "on",
-            }
-        self.trace_io = bool(trace_io)
-
-        try:
-            self.trace_max_points = int(
-                os.environ.get(
-                    "FR3_TRACE_MAX_POINTS",
-                    "20",
-                )
-            )
-        except ValueError:
-            self.trace_max_points = 20
-
-        self.workspace_boundary = load_workspace_boundary()
-
-        if self.base_frame != self.workspace_boundary.frame_id:
-            raise ValueError(
-                "Workspace boundary frame "
-                f"'{self.workspace_boundary.frame_id}' does not match robot "
-                f"base frame '{self.base_frame}'."
-            )
-        if self.ee_link != self.workspace_boundary.tcp_link:
-            raise ValueError(
-                "Workspace boundary TCP link "
-                f"'{self.workspace_boundary.tcp_link}' does not match robot "
-                f"end-effector link '{self.ee_link}'."
-            )
 
         # Current joint state.
         self._joint_pose = [0.0] * 7
@@ -239,13 +198,6 @@ class FR3Robot(Node):
         except RuntimeError as error:
             self.get_logger().warning(str(error))
 
-        if self.trace_io:
-            self.get_logger().info(
-                "[TRACE] FR3 input/output tracing is enabled. "
-                f"Trajectory point limit: {self.trace_max_points} "
-                "(0 means all points)."
-            )
-
     # =============================================================
     # Internal utilities
     # =============================================================
@@ -273,113 +225,6 @@ class FR3Robot(Node):
         raise RuntimeError(
             "ROS was shut down while waiting."
         )
-
-    @staticmethod
-    def _duration_seconds(duration):
-        """Convert a ROS Duration message to floating-point seconds."""
-
-        return float(duration.sec) + float(duration.nanosec) * 1.0e-9
-
-    @staticmethod
-    def _trace_vector(values):
-        """Format numeric ROS arrays without excessive decimal noise."""
-
-        return "[" + ", ".join(
-            f"{float(value):.6f}"
-            for value in values
-        ) + "]"
-
-    def _trace_cartesian_request(self, request):
-        """Print the Python-to-MoveIt Cartesian service input."""
-
-        if not self.trace_io:
-            return
-
-        with self._joint_lock:
-            measured_joints = self._joint_pose.copy()
-
-        lines = [
-            "[TRACE][1] GetCartesianPath request (Python -> MoveIt)",
-            f"  frame_id={request.header.frame_id}",
-            f"  group_name={request.group_name}",
-            f"  link_name={request.link_name}",
-            f"  start_state.is_diff={request.start_state.is_diff}",
-            "  locally measured start joints="
-            f"{self._trace_vector(measured_joints)}",
-            f"  max_step={float(request.max_step):.6f} m",
-            f"  jump_threshold={float(request.jump_threshold):.6f}",
-            f"  avoid_collisions={request.avoid_collisions}",
-            "  position_constraints="
-            f"{len(request.path_constraints.position_constraints)}",
-        ]
-
-        if hasattr(request, "max_cartesian_speed"):
-            lines.extend([
-                "  cartesian_speed_limited_link="
-                f"{request.cartesian_speed_limited_link}",
-                "  max_cartesian_speed="
-                f"{float(request.max_cartesian_speed):.6f} m/s",
-            ])
-
-        for index, waypoint in enumerate(request.waypoints):
-            lines.extend([
-                f"  waypoint[{index}].position="
-                f"[{waypoint.position.x:.6f}, "
-                f"{waypoint.position.y:.6f}, "
-                f"{waypoint.position.z:.6f}]",
-                f"  waypoint[{index}].quaternion="
-                f"[{waypoint.orientation.x:.6f}, "
-                f"{waypoint.orientation.y:.6f}, "
-                f"{waypoint.orientation.z:.6f}, "
-                f"{waypoint.orientation.w:.6f}]",
-            ])
-
-        self.get_logger().info("\n".join(lines))
-
-    def _trace_trajectory(self, label, trajectory):
-        """Print a MoveIt RobotTrajectory at a ROS interface boundary."""
-
-        if not self.trace_io:
-            return
-
-        joint_trajectory = trajectory.joint_trajectory
-        points = joint_trajectory.points
-        point_count = len(points)
-        limit = self.trace_max_points
-
-        if limit <= 0 or point_count <= limit:
-            indices = list(range(point_count))
-        else:
-            head_count = (limit + 1) // 2
-            tail_count = limit // 2
-            indices = (
-                list(range(head_count))
-                + list(range(point_count - tail_count, point_count))
-            )
-
-        lines = [
-            f"[TRACE]{label}",
-            f"  joint_names={list(joint_trajectory.joint_names)}",
-            f"  point_count={point_count}",
-        ]
-
-        previous_index = None
-        for index in indices:
-            if previous_index is not None and index != previous_index + 1:
-                omitted = index - previous_index - 1
-                lines.append(f"  ... {omitted} point(s) omitted ...")
-
-            point = points[index]
-            lines.extend([
-                f"  point[{index}].time_from_start="
-                f"{self._duration_seconds(point.time_from_start):.6f} s",
-                f"    positions={self._trace_vector(point.positions)}",
-                f"    velocities={self._trace_vector(point.velocities)}",
-                f"    accelerations={self._trace_vector(point.accelerations)}",
-            ])
-            previous_index = index
-
-        self.get_logger().info("\n".join(lines))
 
     @staticmethod
     def _duration_from_seconds(seconds):
@@ -546,53 +391,6 @@ class FR3Robot(Node):
             float(rotation_vector[1]),
             float(rotation_vector[2]),
         ]
-
-    def _workspace_path_constraints(self):
-        """Build a MoveIt keep-in box for the configured TCP link."""
-
-        lower = self.workspace_boundary.planning_min
-        upper = self.workspace_boundary.planning_max
-
-        box = SolidPrimitive()
-        box.type = SolidPrimitive.BOX
-        box.dimensions = [
-            upper[index] - lower[index]
-            for index in range(3)
-        ]
-
-        box_pose = Pose()
-        box_pose.position.x = (lower[0] + upper[0]) / 2.0
-        box_pose.position.y = (lower[1] + upper[1]) / 2.0
-        box_pose.position.z = (lower[2] + upper[2]) / 2.0
-        box_pose.orientation.w = 1.0
-
-        position_constraint = PositionConstraint()
-        position_constraint.header.frame_id = self.workspace_boundary.frame_id
-        position_constraint.header.stamp = self.get_clock().now().to_msg()
-        position_constraint.link_name = self.workspace_boundary.tcp_link
-        position_constraint.constraint_region.primitives = [box]
-        position_constraint.constraint_region.primitive_poses = [box_pose]
-        position_constraint.weight = 1.0
-
-        constraints = Constraints()
-        constraints.name = "fr3_tcp_workspace_keep_in"
-        constraints.position_constraints = [position_constraint]
-        return constraints
-
-    def _validate_workspace_waypoints(self, pose_list):
-        """Reject Cartesian targets outside the normal keep-in box."""
-
-        for index, pose in enumerate(pose_list):
-            violation = self.workspace_boundary.violation(
-                pose[:3],
-                region="planning",
-            )
-            if violation:
-                self.get_logger().error(
-                    f"Workspace boundary rejected waypoint {index}: {violation}."
-                )
-                return False
-        return True
 
     # =============================================================
     # Read robot state
@@ -1067,7 +865,6 @@ class FR3Robot(Node):
         max_cartesian_speed=0.02,
         avoid_collisions=True,
         minimum_fraction=0.99,
-        enforce_workspace_boundary=True,
     ):
         """
         Move the TCP to XYZ while preserving the orientation
@@ -1093,7 +890,6 @@ class FR3Robot(Node):
             max_cartesian_speed=max_cartesian_speed,
             avoid_collisions=avoid_collisions,
             minimum_fraction=minimum_fraction,
-            enforce_workspace_boundary=enforce_workspace_boundary,
         )
 
     # =============================================================
@@ -1107,7 +903,6 @@ class FR3Robot(Node):
         max_cartesian_speed=0.03,
         avoid_collisions=True,
         minimum_fraction=0.99,
-        enforce_workspace_boundary=True,
     ):
         """
         Plan and execute a Cartesian trajectory.
@@ -1125,15 +920,6 @@ class FR3Robot(Node):
                 "Cartesian pose list is empty."
             )
             return False
-
-        if enforce_workspace_boundary:
-            if not self._validate_workspace_waypoints(pose_list):
-                return False
-        else:
-            self.get_logger().warning(
-                "Workspace planning protection is DISABLED for this motion. "
-                "This option is intended only for the runtime-stop test."
-            )
 
         try:
             waypoints = [
@@ -1181,9 +967,6 @@ class FR3Robot(Node):
             avoid_collisions
         )
 
-        if enforce_workspace_boundary:
-            request.path_constraints = self._workspace_path_constraints()
-
         # These fields depend on the installed MoveIt version.
         if hasattr(
             request,
@@ -1214,8 +997,6 @@ class FR3Robot(Node):
             request.max_cartesian_speed = float(
                 max_cartesian_speed
             )
-
-        self._trace_cartesian_request(request)
 
         self.get_logger().info(
             f"Computing Cartesian path with "
@@ -1258,18 +1039,6 @@ class FR3Robot(Node):
             f"Cartesian path fraction: "
             f"{percentage:.1f}%"
         )
-
-        if self.trace_io:
-            self.get_logger().info(
-                "[TRACE][2] GetCartesianPath response "
-                "(MoveIt -> Python)\n"
-                f"  error_code={response.error_code.val}\n"
-                f"  fraction={response.fraction:.6f}"
-            )
-            self._trace_trajectory(
-                "[3] Time-parameterized RobotTrajectory",
-                response.solution,
-            )
 
         if (
             response.error_code.val
@@ -1318,11 +1087,6 @@ class FR3Robot(Node):
         goal = ExecuteTrajectory.Goal()
         goal.trajectory = trajectory
 
-        self._trace_trajectory(
-            "[4] ExecuteTrajectory goal (Python -> MoveIt)",
-            goal.trajectory,
-        )
-
         self.get_logger().info(
             "Sending trajectory for execution..."
         )
@@ -1364,12 +1128,6 @@ class FR3Robot(Node):
             )
             return False
 
-        if self.trace_io:
-            self.get_logger().info(
-                "[TRACE][5] ExecuteTrajectory goal response\n"
-                "  accepted=True"
-            )
-
         self.get_logger().info(
             "Trajectory accepted. Robot is moving..."
         )
@@ -1404,14 +1162,6 @@ class FR3Robot(Node):
             return False
 
         result = wrapped_result.result
-
-        if self.trace_io:
-            self.get_logger().info(
-                "[TRACE][6] ExecuteTrajectory result "
-                "(MoveIt -> Python)\n"
-                f"  action_status={wrapped_result.status}\n"
-                f"  moveit_error_code={result.error_code.val}"
-            )
 
         if (
             result.error_code.val
@@ -1481,30 +1231,14 @@ class FR3Robot(Node):
             for value in joint_pose
         ]
 
-        response = None
+        future = self._fk_client.call_async(
+            request
+        )
 
-        # A newly-created client can discover /compute_fk before MoveIt's
-        # first request handler is fully responsive.  Retry that read-only FK
-        # query once; no robot command is sent by this service.
-        for attempt in range(2):
-            future = self._fk_client.call_async(
-                request
-            )
-
-            try:
-                response = self._wait_for_future(
-                    future,
-                    timeout=10.0,
-                )
-                break
-
-            except TimeoutError:
-                if attempt == 1:
-                    raise
-
-                self.get_logger().warning(
-                    "/compute_fk timed out on the first request; retrying once."
-                )
+        response = self._wait_for_future(
+            future,
+            timeout=10.0,
+        )
 
         if response is None:
             raise RuntimeError(

@@ -140,7 +140,14 @@ docker compose exec voxposer python -c \
   'import numpy, scipy, open3d, openai; print("VoxPoser dependencies: OK")'
 ```
 
-## 4. 启动实机 FR3（终端 A）
+## 4. 可选：连接 FR3 读取当前状态（终端 A）
+
+只验证 RGB-D、点云和目标分割时，跳过本节，直接进入第 5 节。Gateway 在没有
+末端 TF 时仍可输出相机数据。
+
+运行第 8 节的完整路径规划时需要本节，因为规划器使用实时
+`fr3_link0 -> fr3_hand_tcp` TF 作为路径起点。这里启动 MoveIt/ros2_control 是为
+了连接机器人、读取关节状态并发布 TF；当前流程不会发送运动命令。
 
 先在 Franka Desk 解锁机器人、松开制动，确认急停可用。然后：
 
@@ -156,6 +163,11 @@ ros2 launch franka_fr3_moveit_config moveit.launch.py \
 ```
 
 保持终端运行。若出现固件不兼容、libfranka 通信错误或丢包，立即停止，不要继续。
+启动后可只读检查末端 TF：
+
+```bash
+ros2 run tf2_ros tf2_echo fr3_link0 fr3_hand_tcp
+```
 
 ## 5. 启动并检查 RGB-D 相机（终端 B）
 
@@ -203,7 +215,8 @@ ros2 run tf2_ros static_transform_publisher \
 
 ## 6. 启动 RGB-D Gateway（终端 C）
 
-保持 FR3、相机和 TF 都在运行，再进入一个控制容器终端：
+保持相机和相机外参 TF 运行，再进入一个控制容器终端。若要生成完整路径，还应
+保持第 4 节的 FR3 状态/TF 正在运行：
 
 ```bash
 cd /home/deagle/Downloads/FRANKAVoxPoser
@@ -257,6 +270,9 @@ docker compose exec voxposer python src/tools/check_fr3_objects.py \
 若这里失败，不要继续生成或执行运动规划。
 
 ## 8. 调用 DeepSeek 并生成规划文件
+
+本节不仅构建 value map，还会从当前真实末端位置生成一条 plan-only 路径，因此
+要求第 4 节发布有效的 `fr3_hand_tcp` TF；仍然不会执行运动。
 
 ```bash
 docker compose exec voxposer python src/tools/plan_fr3_value_map.py \

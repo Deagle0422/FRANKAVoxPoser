@@ -49,8 +49,9 @@ def main():
     frame = perception.get_frame()
     if frame.end_effector_to_target is None:
         raise RuntimeError(
-            "RGB-D snapshot has no end-effector pose. Start the complete "
-            "fr3_moveit_gazebo.launch.py instead of the camera-only launch."
+            "RGB-D snapshot has no end-effector pose. Start a robot state/TF "
+            "source that publishes the configured end-effector frame before "
+            "requesting a path from the current robot pose."
         )
 
     lmps, interface = setup_LMP(perception, voxposer, debug=True)

@@ -14,7 +14,7 @@ if SRC_DIR not in sys.path:
     sys.path.insert(0, SRC_DIR)
 
 from interfaces import setup_LMP
-from perception import ColorRuleSegmenter, FR3RGBDPerception
+from perception import FR3RGBDPerception, build_segmenter
 from utils import set_lmp_objects
 
 
@@ -42,7 +42,7 @@ def main():
     with open(args.voxposer_config, "r", encoding="utf-8") as config_file:
         voxposer = yaml.safe_load(config_file)
 
-    segmenter = ColorRuleSegmenter(rgbd["segmentation"]["objects"])
+    segmenter = build_segmenter(rgbd["segmentation"])
     perception = FR3RGBDPerception(rgbd, segmenter=segmenter)
     lmps, interface = setup_LMP(perception, voxposer, debug=True)
     set_lmp_objects(lmps, perception.get_object_names())

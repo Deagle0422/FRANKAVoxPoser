@@ -67,6 +67,51 @@ services:
       - ./voxposer/src/configs:/workspace/voxposer/src/configs:ro
     command: ["sleep", "infinity"]
 
+  vision:
+    profiles: ["vision"]
+    build:
+      context: .
+      dockerfile: docker/vision.Dockerfile
+      args:
+        USER_UID: ${USER_UID:-1000}
+        USER_GID: ${USER_GID:-1000}
+    image: franka-voxposer/vision:sam2
+    container_name: franka-voxposer-vision
+    network_mode: host
+    init: true
+    environment:
+      HF_HOME: /models/huggingface
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - vision-models:/models
+    command:
+      - python
+      - -m
+      - perception.vision_service
+      - --host
+      - 127.0.0.1
+      - --port
+      - "8770"
+      - --detector-model
+      - google/owlv2-base-patch16-ensemble
+      - --sam2-model
+      - facebook/sam2.1-hiera-tiny
+      - --device
+      - auto
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8770/healthz', timeout=3).read()"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
+
 secrets:
   deepseek_api_key:
     file: ${DEEPSEEK_API_KEY_FILE:-./secrets/deepseek_api_key.txt}
+
+volumes:
+  vision-models:

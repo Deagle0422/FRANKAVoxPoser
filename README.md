@@ -40,6 +40,12 @@ The containers deliberately remain separate:
   uses host networking and receives real-time scheduling capabilities.
 - `voxposer` owns Python 3.9, SciPy, Open3D and the LLM client. It cannot load
   libfranka and communicates through the loopback-only RGB-D stream.
+- Optional `vision` owns PyTorch, OWLv2 and SAM 2. It is started only through
+  the `vision` Compose profile and returns masks over a loopback-only service.
+
+Open-vocabulary perception setup is documented in
+[`docs/OPEN_VOCAB_SAM2.md`](docs/OPEN_VOCAB_SAM2.md). Simulation keeps the
+deterministic color rules unless its YAML explicitly selects `remote_sam2`.
 
 Docker isolates dependencies; it does not create a real-time host. Hardware
 still requires a supported low-latency/PREEMPT_RT kernel, a direct robot NIC,

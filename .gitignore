@@ -17,6 +17,7 @@ voxposer/cache/
 voxposer/src/cache/
 outputs/
 visualizations/
+voxposer/src/configs/fr3_rgbd_real_sam2.yaml
 
 # Runtime traces and dumps
 **/trace_output/
@@ -28,4 +29,3 @@ visualizations/
 .idea/
 .vscode/
 .DS_Store
-

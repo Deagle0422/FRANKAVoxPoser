@@ -1,0 +1,40 @@
+rgbd:
+  topics:
+    color: /camera/color/image_raw
+    depth: /camera/aligned_depth_to_color/image_raw
+    camera_info: /camera/color/camera_info
+
+  camera_frame_override: camera_color_optical_frame
+  target_frame: fr3_link0
+  sync_tolerance_sec: 0.05
+  tf_timeout_sec: 0.20
+  integer_depth_scale: 0.001
+
+  stream:
+    host: 127.0.0.1
+    port: 8765
+    timeout_sec: 5.0
+
+  point_cloud:
+    min_depth_m: 0.10
+    max_depth_m: 2.50
+    stride: 2
+
+  # Replace these bounds with measured safe limits before hardware use.
+  workspace:
+    min: [0.28, -0.70, -0.05]
+    max: [0.90, 0.70, 0.80]
+
+  segmentation:
+    type: remote_sam2
+    service:
+      endpoint: http://127.0.0.1:8770
+      timeout_sec: 60.0
+    objects:
+      pick_object:
+        aliases: [pick object, red cube, red block]
+        # Use a visually specific English phrase for OWLv2.
+        prompt: a red cube on the robot table
+      place_target:
+        aliases: [place target, green target, green area]
+        prompt: a flat green target area on the robot table

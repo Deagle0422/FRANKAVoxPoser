@@ -59,12 +59,16 @@ chmod 700 secrets
 ```
 
 Review `.env`, especially `FR3_ROBOT_IP`, `ROS_DOMAIN_ID`, and `USER_UID`.
-Store only the API-key text in the ignored file:
+Create the ignored key file and edit it on the deployment machine:
 
 ```bash
-install -m 600 /home/deagle/Downloads/VoxPoser/api.txt \
-  secrets/deepseek_api_key.txt
+touch secrets/deepseek_api_key.txt
+chmod 600 secrets/deepseek_api_key.txt
+nano secrets/deepseek_api_key.txt
 ```
+
+Enter only the DeepSeek API key on one line. Do not add
+`DEEPSEEK_API_KEY=`, quotes, or `export`.
 
 Build and start both isolated environments:
 

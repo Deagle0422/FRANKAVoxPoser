@@ -77,9 +77,14 @@ cd /home/deagle/Downloads/FRANKAVoxPoser
 cp .env.example .env
 mkdir -p secrets outputs
 chmod 700 secrets
-install -m 600 /home/deagle/Downloads/VoxPoser/api.txt \
-  secrets/deepseek_api_key.txt
+touch secrets/deepseek_api_key.txt
+chmod 600 secrets/deepseek_api_key.txt
+nano secrets/deepseek_api_key.txt
 ```
+
+在编辑器中只填写一行 DeepSeek API key，然后保存退出。不要填写
+`DEEPSEEK_API_KEY=`、引号或 `export`。`touch` 不会覆盖已经存在的密钥内容，
+所以这组命令可以安全重复执行。
 
 编辑 `.env`。实机建议使用与仿真不同的 `ROS_DOMAIN_ID`：
 
